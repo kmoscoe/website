@@ -32,6 +32,7 @@ import { Input, InputGroup } from "reactstrap";
 
 import {
   GA_EVENT_AUTOCOMPLETE_SELECTION,
+  GA_EVENT_AUTOCOMPLETE_SELECTION_REDIRECTS_TO_PLACE,
   GA_PARAM_AUTOCOMPLETE_SELECTION_INDEX,
   triggerGAEvent,
 } from "../../shared/ga_events";
@@ -50,8 +51,8 @@ const LOCATION_SEARCH = "location_search";
 
 export interface AutoCompleteResult {
   dcid: string;
-  match_type: string;
-  matched_query: string;
+  matchType: string;
+  matchedQuery: string;
   name: string;
 }
 
@@ -66,6 +67,17 @@ interface AutoCompleteInputPropType {
   feedbackLink: string;
   shouldAutoFocus: boolean;
   barType: string;
+}
+
+function convertJSONToAutoCompleteResults(
+  json: object[]
+): AutoCompleteResult[] {
+  return json.map((json) => ({
+    dcid: json["dcid"],
+    matchType: json["match_type"],
+    matchedQuery: json["matched_query"],
+    name: json["name"],
+  }));
 }
 
 export function AutoCompleteInput(
@@ -136,8 +148,15 @@ export function AutoCompleteInput(
 
   useEffect(() => {
     // TriggerSearch state used to ensure onSearch only called after text updated.
-    props.onSearch();
+    executeQuery();
   }, [triggerSearch, setTriggerSearch]);
+
+  function executeQuery(): void {
+    setResults({ placeResults: [], svResults: [] });
+    setHoveredIdx(-1);
+    controller.current.abort(); // Ensure autocomplete responses can't come back.
+    props.onSearch();
+  }
 
   function onInputChange(e: React.ChangeEvent<HTMLInputElement>): void {
     const currentText = e.target.value;
@@ -206,7 +225,9 @@ export function AutoCompleteInput(
       .then((response) => {
         if (!controller.current.signal.aborted) {
           setResults({
-            placeResults: response["data"]["predictions"],
+            placeResults: convertJSONToAutoCompleteResults(
+              response["data"]["predictions"]
+            ),
             svResults: [],
           });
         }
@@ -239,7 +260,7 @@ export function AutoCompleteInput(
         if (hoveredIdx >= 0) {
           selectResult(results.placeResults[hoveredIdx], hoveredIdx);
         } else {
-          props.onSearch();
+          executeQuery();
         }
         break;
       case "ArrowUp":
@@ -259,7 +280,7 @@ export function AutoCompleteInput(
     query: string,
     result: AutoCompleteResult
   ): string {
-    return stripPatternFromQuery(query, result.matched_query) + result.name;
+    return stripPatternFromQuery(query, result.matchedQuery) + result.name;
   }
 
   function processArrowKey(selectedIndex: number): void {
@@ -281,13 +302,17 @@ export function AutoCompleteInput(
     });
 
     if (
-      result["match_type"] == LOCATION_SEARCH &&
-      stripPatternFromQuery(baseInput, result.matched_query).trim() === ""
+      result.matchType == LOCATION_SEARCH &&
+      stripPatternFromQuery(baseInput, result.matchedQuery).trim() === ""
     ) {
-      // If this is a location result, and the matched_query matches the base input
+      // If this is a location result, and the matchedQuery matches the base input
       // then that means there are no other parts of the query, so it's a place only
       // redirection.
       if (result.dcid) {
+        triggerGAEvent(GA_EVENT_AUTOCOMPLETE_SELECTION_REDIRECTS_TO_PLACE, {
+          [GA_PARAM_AUTOCOMPLETE_SELECTION_INDEX]: String(idx),
+        });
+
         const url = PLACE_EXPLORER_PREFIX + `${result.dcid}`;
         window.open(url, "_self");
         return;
@@ -325,12 +350,12 @@ export function AutoCompleteInput(
               aria-label={props.placeholder}
               value={inputText}
               onChange={onInputChange}
-              onKeyDown={(event) => handleKeydownEvent(event)}
+              onKeyDown={(event): void => handleKeydownEvent(event)}
               className="pac-target-input search-input-text"
               autoComplete="one-time-code"
               autoFocus={props.shouldAutoFocus}
             ></Input>
-            <div onClick={props.onSearch} id="rich-search-button">
+            <div onClick={executeQuery} id="rich-search-button">
               {isHeaderBar && <ArrowForward />}
             </div>
           </InputGroup>

@@ -40,8 +40,8 @@ export function AutoCompleteSuggestions(
 ): ReactElement {
   const [triggered, setTriggered] = useState(false);
 
-  function getIcon(query: string, matched_query: string): string {
-    if (query.trim() == matched_query.trim()) {
+  function getIcon(query: string, matchedQuery: string): string {
+    if (query.trim() == matchedQuery.trim()) {
       return "location_on";
     }
     return "search";
@@ -57,46 +57,44 @@ export function AutoCompleteSuggestions(
   }, [props.allResults]);
 
   return (
-    <div className="search-results-place search-results-section">
-      <div className="search-input-results-list" tabIndex={-1}>
-        {props.allResults.map((result: AutoCompleteResult, idx: number) => {
-          return (
-            <div key={idx}>
+    <div className="autocomplete-search-input-results-list" tabIndex={-1}>
+      {props.allResults.map((result: AutoCompleteResult, idx: number) => {
+        return (
+          <div key={idx}>
+            <div
+              className={`search-input-result-section  ${
+                idx === props.hoveredIdx
+                  ? "search-input-result-section-highlighted"
+                  : ""
+              }`}
+            >
               <div
-                className={`search-input-result-section  ${
-                  idx === props.hoveredIdx
-                    ? "search-input-result-section-highlighted"
-                    : ""
-                }`}
+                className="search-input-result"
+                key={"search-input-result-" + result.dcid}
+                onClick={(): void => props.onClick(result, idx)}
               >
-                <div
-                  className="search-input-result"
-                  key={"search-input-result-" + result.dcid}
-                  onClick={() => props.onClick(result, idx)}
-                >
-                  <span className="material-icons-outlined search-result-icon">
-                    {getIcon(props.baseInput, result.matched_query)}
+                <span className="material-icons-outlined search-result-icon">
+                  {getIcon(props.baseInput, result.matchedQuery)}
+                </span>
+                <div className="query-result">
+                  <span>
+                    {stripPatternFromQuery(
+                      props.baseInput,
+                      result.matchedQuery
+                    )}
+                    <span className="query-suggestion">{result.name}</span>
                   </span>
-                  <div className="query-result">
-                    <span>
-                      {stripPatternFromQuery(
-                        props.baseInput,
-                        result.matched_query
-                      )}
-                      <span className="query-suggestion">{result.name}</span>
-                    </span>
-                  </div>
                 </div>
               </div>
-              {idx !== props.allResults.length - 1 ? (
-                <hr className="result-divider"></hr>
-              ) : (
-                <></>
-              )}
             </div>
-          );
-        })}
-      </div>
+            {idx !== props.allResults.length - 1 ? (
+              <hr className="result-divider"></hr>
+            ) : (
+              <></>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

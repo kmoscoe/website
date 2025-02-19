@@ -14,12 +14,12 @@
 
 output "redis_instance_host" {
   description = "The hostname or IP address of the Redis instance"
-  value       = var.enable_redis ? google_redis_instance.redis_instance[0].host : ""
+  value       = try(local.redis_instance.host, "")
 }
 
 output "redis_instance_port" {
   description = "The port number the Redis instance is listening on"
-  value       = var.enable_redis ? google_redis_instance.redis_instance[0].port : null
+  value       = try(local.redis_instance.port, "")
 }
 
 output "mysql_instance_connection_name" {
@@ -44,8 +44,8 @@ output "mysql_user_password" {
   sensitive   = true
 }
 
-output "dc_gcs_data_bucket_path" {
-  value = local.dc_gcs_data_bucket_path
+output "gcs_data_bucket_name" {
+  value = local.gcs_data_bucket_name
 }
 
 output "cloud_run_service_name" {

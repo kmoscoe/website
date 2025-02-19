@@ -14,6 +14,8 @@
   limitations under the License.
   #}
   {%- extends BASE_HTML -%}
+
+  {% from 'macros/icons.html' import inline_svg %}
   
   {% set main_id = 'dc-places' %}
   {% set page_id = 'page-dc-places' %}
@@ -26,6 +28,7 @@
   {% endif %}
   {% set place_category = category %}
   {% set is_show_header_search_bar = true %}
+  {% set new_place_page = true %}
   
   {% block head %}
   <link rel="stylesheet" href={{url_for('static', filename='css/dev_place_page.min.css' , t=config['VERSION'])}}>
@@ -41,7 +44,7 @@
   {% endblock %}
   
   {% block content %}
-  <div id="body" class="container-fluid">
+  <div id="body">
     <div id="page-metadata"
       style="display:none;"
       data-place-dcid="{{place_dcid}}"
@@ -52,6 +55,11 @@
     ></div>
     <div id="plage-page-main" class="container">
       <div id="place-page-content" class="page-content-container">
+      </div>
+      <div id="page-loading" class="mt-4" style="display:none;">
+        {{ inline_svg('progress_activity') }}
+        {# TRANSLATORS: A message shown on the page while the content is loading. #}
+        <p>{% trans %}Loading{% endtrans %}</p>
       </div>
     </div>
   </div>

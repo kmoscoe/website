@@ -28,6 +28,8 @@ import { drawLineChart } from "../../chart/draw_line";
 import { TimeScaleOption } from "../../chart/types";
 import { URL_PATH } from "../../constants/app/visualization_constants";
 import { CSV_FIELD_DELIMITER } from "../../constants/tile_constants";
+import { intl } from "../../i18n/i18n";
+import { tileMessages } from "../../i18n/i18n_tile_messages";
 import { useLazyLoad } from "../../shared/hooks";
 import { SeriesApiResponse } from "../../shared/stat_types";
 import { NamedTypedPlace, StatVarSpec } from "../../shared/types";
@@ -128,7 +130,7 @@ export function LineTile(props: LineTilePropType): JSX.Element {
       return;
     }
     if (!chartData || !_.isEqual(chartData.props, props)) {
-      (async () => {
+      (async (): Promise<void> => {
         try {
           setIsLoading(true);
           const data = await fetchData(props);
@@ -162,7 +164,7 @@ export function LineTile(props: LineTilePropType): JSX.Element {
       id={props.id}
       isInitialLoading={_.isNull(chartData)}
       isLoading={isLoading}
-      replacementStrings={getReplacementStrings(props)}
+      replacementStrings={getReplacementStrings(props, chartData)}
       sources={props.sources || (chartData && chartData.sources)}
       subtitle={props.subtitle}
       title={props.title}
@@ -231,22 +233,53 @@ function getDataCsvCallback(props: LineTilePropType): () => Promise<string> {
  * @param props LineTile props
  * @returns Array of place dcids
  */
-function getPlaceDcids(props: LineTilePropType) {
+function getPlaceDcids(props: LineTilePropType): string[] {
   return props.comparisonPlaces && props.comparisonPlaces.length > 0
     ? props.comparisonPlaces
     : [props.place.dcid];
 }
 
+// TODO(gmechali): Unify fetching latest data for all tiles.
+/**
+ * Returns the latest year found in the chart data.
+ *
+ * @param chartData Line chart data
+ * @returns Latest year with data.
+ */
+const getLatestDate = (chartData: LineChartData): string | null => {
+  if (!chartData || !chartData.dataGroup) {
+    return null;
+  }
+
+  const years = chartData?.dataGroup
+    .flatMap((g) => g.value || [])
+    .map((p) => {
+      const date = p && p.time ? new Date(p.time) : null;
+      return date ? date.getUTCFullYear() : null;
+    })
+    .filter((year) => year !== null);
+
+  if (years.length > 0) {
+    years.sort();
+    return years.pop().toString();
+  }
+  return null;
+};
+
 // Get the ReplacementStrings object used for formatting the title
 export function getReplacementStrings(
-  props: LineTilePropType
+  props: LineTilePropType,
+  chartData: LineChartData
 ): ReplacementStrings {
   return {
     placeName: props.place ? props.place.name : "",
+    date: getLatestDate(chartData),
   };
 }
 
-export const fetchData = async (props: LineTilePropType) => {
+export const fetchData = async (
+  props: LineTilePropType
+): Promise<LineChartData> => {
   const facetToVariable = { [EMPTY_FACET_ID_KEY]: [] };
   for (const spec of props.statVarSpec) {
     const facetId = spec.facetId || EMPTY_FACET_ID_KEY;
@@ -455,7 +488,7 @@ function getExploreLink(props: LineTilePropType): {
     {}
   );
   return {
-    displayText: "Timeline Tool",
+    displayText: intl.formatMessage(tileMessages.timelineTool),
     url: `${props.apiRoot || ""}${URL_PATH}#${hash}`,
   };
 }

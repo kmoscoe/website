@@ -40,6 +40,8 @@ import { drawLegendSvg, getTooltipHtmlFn } from "../../chart/draw_map_utils";
 import { GeoJsonData } from "../../chart/types";
 import { URL_PATH } from "../../constants/app/visualization_constants";
 import { CSV_FIELD_DELIMITER } from "../../constants/tile_constants";
+import { intl } from "../../i18n/i18n";
+import { tileMessages } from "../../i18n/i18n_tile_messages";
 import { USA_PLACE_DCID } from "../../shared/constants";
 import { useLazyLoad } from "../../shared/hooks";
 import { PointApiResponse, SeriesApiResponse } from "../../shared/stat_types";
@@ -219,7 +221,7 @@ export function MapTile(props: MapTilePropType): JSX.Element {
       !_.isEqual(mapChartData.props, props) ||
       !_.isEqual(mapChartData.dateOverride, dateOverride)
     ) {
-      (async () => {
+      (async (): Promise<void> => {
         try {
           setIsLoading(true);
           const data = await fetchData(props, dateOverride);
@@ -283,7 +285,7 @@ export function MapTile(props: MapTilePropType): JSX.Element {
   }, [props, mapChartData, svgContainer, legendContainer, mapContainer]);
   useDrawOnResize(drawFn, svgContainer.current);
   useEffect(() => {
-    const eventHandler = (e: CustomEvent<ChartEventDetail>) => {
+    const eventHandler = (e: CustomEvent<ChartEventDetail>): void => {
       if (e.detail.property === "date") {
         setDateOverride(e.detail.value);
       }
@@ -315,7 +317,7 @@ export function MapTile(props: MapTilePropType): JSX.Element {
       }
       className={`${props.className} map-chart`}
       allowEmbed={true}
-      getDataCsv={async () => {
+      getDataCsv={async (): Promise<string> => {
         const layers = getDataSpec(props);
         const rows: DataRow[] = [];
         for (const layer of layers) {
@@ -745,7 +747,7 @@ function getExploreLink(props: MapTilePropType): {
     {}
   );
   return {
-    displayText: "Map Tool",
+    displayText: intl.formatMessage(tileMessages.mapTool),
     url: `${props.apiRoot || ""}${URL_PATH}#${hash}`,
   };
 }

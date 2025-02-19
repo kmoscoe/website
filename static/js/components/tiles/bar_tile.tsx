@@ -35,6 +35,8 @@ import {
 } from "../../chart/draw_bar";
 import { URL_PATH } from "../../constants/app/visualization_constants";
 import { CSV_FIELD_DELIMITER } from "../../constants/tile_constants";
+import { intl } from "../../i18n/i18n";
+import { tileMessages } from "../../i18n/i18n_tile_messages";
 import { PLACE_TYPES } from "../../shared/constants";
 import { useLazyLoad } from "../../shared/hooks";
 import { PointApiResponse, SeriesApiResponse } from "../../shared/stat_types";
@@ -148,7 +150,7 @@ export function BarTile(props: BarTilePropType): JSX.Element {
       !_.isEqual(barChartData.props, props) ||
       !_.isEqual(barChartData.dateOverride, dateOverride)
     ) {
-      (async () => {
+      (async (): Promise<void> => {
         try {
           setIsLoading(true);
           const data = await fetchData(props, dateOverride);
@@ -174,7 +176,7 @@ export function BarTile(props: BarTilePropType): JSX.Element {
    * component
    */
   useEffect(() => {
-    const eventHandler = (e: CustomEvent<ChartEventDetail>) => {
+    const eventHandler = (e: CustomEvent<ChartEventDetail>): void => {
       if (e.detail.property === "date") {
         setDateOverride(e.detail.value);
       }
@@ -283,7 +285,7 @@ export function getReplacementStrings(
 export const fetchData = async (
   props: BarTilePropType,
   dateOverride?: string
-) => {
+): Promise<BarChartData> => {
   const statSvs = props.variables
     .map((spec) => spec.statVar)
     .filter((sv) => !!sv);
@@ -620,7 +622,7 @@ function getExploreLink(props: BarTilePropType): {
     {}
   );
   return {
-    displayText: "Timeline Tool",
+    displayText: intl.formatMessage(tileMessages.timelineTool),
     url: `${props.apiRoot || ""}${URL_PATH}#${hash}`,
   };
 }

@@ -33,6 +33,8 @@ import {
 import { URL_PATH } from "../../constants/app/visualization_constants";
 import { ChartQuadrant } from "../../constants/scatter_chart_constants";
 import { CSV_FIELD_DELIMITER } from "../../constants/tile_constants";
+import { intl } from "../../i18n/i18n";
+import { tileMessages } from "../../i18n/i18n_tile_messages";
 import { useLazyLoad } from "../../shared/hooks";
 import { PointApiResponse, SeriesApiResponse } from "../../shared/stat_types";
 import { NamedTypedPlace, StatVarSpec } from "../../shared/types";
@@ -134,7 +136,7 @@ export function ScatterTile(props: ScatterTilePropType): JSX.Element {
       // only re-fetch if the props that affect data fetch are not equal
       return;
     }
-    (async () => {
+    (async (): Promise<void> => {
       try {
         setIsLoading(true);
         const data = await fetchData(props);
@@ -294,7 +296,9 @@ function getPopulationPromise(
   }
 }
 
-export const fetchData = async (props: ScatterTilePropType) => {
+export const fetchData = async (
+  props: ScatterTilePropType
+): Promise<ScatterChartData> => {
   if (props.statVarSpec.length < 2) {
     // TODO: add error message
     return;
@@ -554,7 +558,7 @@ function getExploreLink(props: ScatterTilePropType): {
     displayOptions
   );
   return {
-    displayText: "Scatter Tool",
+    displayText: intl.formatMessage(tileMessages.scatterTool),
     url: `${props.apiRoot || ""}${URL_PATH}#${hash}`,
   };
 }

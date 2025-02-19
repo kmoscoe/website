@@ -16,23 +16,15 @@ Place API dataclass types
 """
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import List, Optional
 
-CHART_TYPES = {"BAR", "LINE", "MAP", "RANKING"}
+CHART_TYPES = {"BAR", "LINE", "MAP", "RANKING", "HIGHLIGHT"}
 
 
 @dataclass
 class Chart:
   type: str  # Restricted to CHART_TYPES
-  title: str
-  category: str
-  description: str
-  statisticalVariableDcids: List[str]
-  topicDcids: List[str]
-  denominator: Optional[List[str]] = None
-  unit: Optional[str] = None
-  scaling: Optional[float] = None
-  childPlaceType: Optional[str] = None
+  maxPlaces: int
 
   def __post_init__(self):
     # Custom validator for the `type` field
@@ -42,11 +34,39 @@ class Chart:
 
 
 @dataclass
+class BlockConfig:
+  charts: List[Chart]
+  category: str
+  title: str
+  topicDcids: List[str]
+  description: str
+  denominator: Optional[List[str]] = None
+  statisticalVariableDcids: Optional[List[str]] = None
+  unit: Optional[str] = None
+  scaling: Optional[float] = None
+  childPlaceType: Optional[str] = None
+  placeScope: Optional[str] = None
+
+
+@dataclass
 class Place:
   dcid: str
   name: str
   types: List[str]
   dissolved: bool = False
+
+  def __eq__(self, other):
+    if not isinstance(other, Place):
+      return False
+    return (self.dcid == other.dcid and self.name == other.name and
+            self.types == other.types and self.dissolved == other.dissolved)
+
+
+@dataclass
+class Category:
+  name: str
+  translatedName: str
+  hasMoreCharts: bool = False
 
 
 @dataclass
@@ -54,9 +74,9 @@ class PlaceChartsApiResponse:
   """
   API Response for /api/dev-place/charts/<place_dcid>
   """
-  charts: List[Chart]
+  blocks: List[BlockConfig]
   place: Place
-  translatedCategoryStrings: Dict[str, str]
+  categories: List[Category]
 
 
 @dataclass
@@ -70,3 +90,86 @@ class RelatedPlacesApiResponse:
   place: Place
   similarPlaces: List[Place]
   parentPlaces: List[Place] = None
+  peersWithinParent: List[str] = None
+
+
+@dataclass
+class ServerChartMetadata:
+  """Chart metadata for the server configuration for charts"""
+  type: str
+  max_places: Optional[int] = None
+
+  def __eq__(self, other):
+    if not isinstance(other, ServerChartMetadata):
+      return False
+    return (self.type == other.type and self.max_places == other.max_places)
+
+
+@dataclass
+class ServerBlockMetadata:
+  """Block metadata for the server configuration for blocks"""
+  place_scope: str
+  charts: List[ServerChartMetadata]
+  is_overview: bool = False
+  non_dividable: bool = False  # After existence checks
+  title: Optional[str] = None
+
+  def __eq__(self, other):
+    if not isinstance(other, ServerBlockMetadata):
+      return False
+    return (self.place_scope == other.place_scope and
+            self.is_overview == other.is_overview and
+            self.is_overview == other.is_overview and
+            self.non_dividable == other.non_dividable and
+            self.title == other.title and self.charts == other.charts)
+
+
+@dataclass
+class ServerChartConfiguration:
+  """Configuration of hardcoded charts in server/config/chart_config"""
+  # Note that this is only for the revamped place page chart format.
+  category: str
+  title_id: str
+  title: str
+  description: str
+  variables: List[str]
+  denominator: Optional[List[str]]
+  blocks: List[ServerBlockMetadata]
+  unit: Optional[str] = None
+  scaling: Optional[int] = None
+  non_dividable: bool = False  # Read in from configs
+  scale: bool = False
+
+  def __eq__(self, other):
+    if not isinstance(other, ServerChartConfiguration):
+      return False
+    return (self.category == other.category and
+            self.title_id == other.title_id and self.title == other.title and
+            self.description == other.description and
+            self.variables == other.variables and
+            self.denominator == other.denominator and
+            self.blocks == other.blocks and self.unit == other.unit and
+            self.scaling == other.scaling and
+            self.non_dividable == other.non_dividable and
+            self.scale == other.scale)
+
+
+@dataclass
+class OverviewTableDataRow:
+  """
+  A single row of overview table data for a place.
+  """
+  date: str
+  name: str
+  provenanceUrl: str
+  unit: Optional[str]
+  value: float
+  variableDcid: str
+
+
+@dataclass
+class PlaceOverviewTableApiResponse:
+  """
+  API Response for /api/dev-place/overview-table/<place_dcid>
+  """
+  data: List[OverviewTableDataRow]

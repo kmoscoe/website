@@ -29,6 +29,8 @@ website:
   nodePool: "default-pool"
   evalTool:
     enabled: true
+  dataGemma:
+    enabled: true
   redis:
     enabled: true
     configFile: |
@@ -56,7 +58,6 @@ nl:
       - base_uae_mem
       - bio_ft
       - medium_ft
-      - base_uae_lance
       - base_mistral_mem
       - sdg_ft
       - undata_ft

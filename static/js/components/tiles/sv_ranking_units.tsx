@@ -21,6 +21,8 @@ import React, { RefObject, useRef } from "react";
 
 import { VisType } from "../../apps/visualization/vis_type_configs";
 import { URL_PATH } from "../../constants/app/visualization_constants";
+import { intl } from "../../i18n/i18n";
+import { tileMessages } from "../../i18n/i18n_tile_messages";
 import { StatVarSpec } from "../../shared/types";
 import {
   RankingData,
@@ -88,9 +90,6 @@ export function SvRankingUnits(props: SvRankingUnitsProps): JSX.Element {
       chartHeight = divEl.offsetHeight;
       chartWidth = divEl.offsetWidth;
     }
-    const points = isHighest
-      ? rankingGroup.points.slice().reverse()
-      : rankingGroup.points;
     showChartEmbed(
       chartWidth,
       chartHeight,
@@ -123,7 +122,9 @@ export function SvRankingUnits(props: SvRankingUnitsProps): JSX.Element {
           {!props.hideFooter && (
             <ChartFooter
               handleEmbed={
-                props.errorMsg ? null : () => handleEmbed(true, chartTitle)
+                props.errorMsg
+                  ? null
+                  : (): void => handleEmbed(true, chartTitle)
               }
               exploreLink={
                 props.showExploreMore && !props.errorMsg
@@ -158,7 +159,7 @@ export function SvRankingUnits(props: SvRankingUnitsProps): JSX.Element {
               )}
               {!props.hideFooter && (
                 <ChartFooter
-                  handleEmbed={() => handleEmbed(true, chartTitle)}
+                  handleEmbed={(): void => handleEmbed(true, chartTitle)}
                   exploreLink={
                     props.showExploreMore ? getExploreLink(props, true) : null
                   }
@@ -189,7 +190,7 @@ export function SvRankingUnits(props: SvRankingUnitsProps): JSX.Element {
               )}
               {!props.hideFooter && (
                 <ChartFooter
-                  handleEmbed={() => handleEmbed(false, chartTitle)}
+                  handleEmbed={(): void => handleEmbed(false, chartTitle)}
                   exploreLink={
                     props.showExploreMore ? getExploreLink(props, false) : null
                   }
@@ -245,7 +246,10 @@ export function getRankingUnitTitle(
  * @param rankingGroup Chart ranking group
  * @returns formatted title
  */
-function getChartTitle(tileConfigTitle: string, rankingGroup: RankingGroup) {
+function getChartTitle(
+  tileConfigTitle: string,
+  rankingGroup: RankingGroup
+): string {
   const rs = {
     date: rankingGroup.dateRange,
     placeName: "",
@@ -378,7 +382,7 @@ function getExploreLink(
     {}
   );
   return {
-    displayText: "Timeline Tool",
+    displayText: intl.formatMessage(tileMessages.timelineTool),
     url: `${props.apiRoot || ""}${URL_PATH}#${hash}`,
   };
 }

@@ -20,6 +20,8 @@
 
 import React, { useState } from "react";
 
+import { intl } from "../../i18n/i18n";
+import { tileMessages } from "../../i18n/i18n_tile_messages";
 import {
   GA_EVENT_TILE_DOWNLOAD,
   GA_EVENT_TILE_EXPLORE_MORE,
@@ -53,7 +55,7 @@ export function ChartFooter(props: ChartFooterPropType): JSX.Element {
                 <span className="material-icons-outlined">download</span>
                 <a
                   href="#"
-                  onClick={(event) => {
+                  onClick={(event): void => {
                     event.preventDefault();
                     triggerGAEvent(GA_EVENT_TILE_DOWNLOAD, {
                       [GA_PARAM_TILE_TYPE]: props.exploreLink?.displayText,
@@ -61,7 +63,7 @@ export function ChartFooter(props: ChartFooterPropType): JSX.Element {
                     props.handleEmbed();
                   }}
                 >
-                  Download
+                  {intl.formatMessage(tileMessages.download)}
                 </a>
               </div>
             )}
@@ -72,14 +74,16 @@ export function ChartFooter(props: ChartFooterPropType): JSX.Element {
                   href={props.exploreLink.url}
                   rel="noopener noreferrer"
                   target="_blank"
-                  onClick={(event) => {
+                  onClick={(): boolean => {
                     triggerGAEvent(GA_EVENT_TILE_EXPLORE_MORE, {
                       [GA_PARAM_TILE_TYPE]: props.exploreLink?.displayText,
                     });
                     return true;
                   }}
                 >
-                  Explore in {props.exploreLink.displayText}
+                  {intl.formatMessage(tileMessages.exploreLink, {
+                    toolName: props.exploreLink.displayText,
+                  })}
                 </a>
               </div>
             )}
@@ -106,7 +110,7 @@ function Footnote(props: { text: string }): JSX.Element {
       {hideToggle || showFullText ? props.text : `${shortText}...`}
       <span
         className="chart-footnote-toggle"
-        onClick={() => setShowFullText(!showFullText)}
+        onClick={(): void => setShowFullText(!showFullText)}
       >
         {!hideToggle && (showFullText ? " Show less" : " Show more")}
       </span>

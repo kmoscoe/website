@@ -22,6 +22,8 @@ import _ from "lodash";
 import React, { useState } from "react";
 import { FormGroup, Input, Label } from "reactstrap";
 
+import { intl } from "../../i18n/i18n";
+import { tileMessages } from "../../i18n/i18n_tile_messages";
 import {
   FacetSelector,
   FacetSelectorFacetInfo,
@@ -81,7 +83,9 @@ export function ToolChartFooter(props: ToolChartFooterPropType): JSX.Element {
           {!_.isEmpty(props.sources) && (
             <div className={`${SELECTOR_PREFIX}-metadata`}>
               <span>Data from {getSourcesJsx(props.sources)}</span>
-              {globalThis.viaGoogle ? " via Google" : ""}
+              {globalThis.viaGoogle
+                ? " " + intl.formatMessage(tileMessages.viaGoogle)
+                : ""}
             </div>
           )}
           {!_.isEmpty(mMethods) && (
@@ -93,7 +97,7 @@ export function ToolChartFooter(props: ToolChartFooterPropType): JSX.Element {
           )}
         </div>
         <div
-          onClick={() => setChartOptionsOpened(!chartOptionsOpened)}
+          onClick={(): void => setChartOptionsOpened(!chartOptionsOpened)}
           className={`${SELECTOR_PREFIX}-options-button`}
         >
           <span>Chart Options</span>
@@ -110,7 +114,7 @@ export function ToolChartFooter(props: ToolChartFooterPropType): JSX.Element {
                     id={ratioCheckboxId}
                     type="checkbox"
                     checked={props.isPerCapita}
-                    onChange={() => {
+                    onChange={(): void => {
                       props.onIsPerCapitaUpdated(!props.isPerCapita);
                       if (!props.isPerCapita) {
                         triggerGAEvent(GA_EVENT_TOOL_CHART_OPTION_CLICK, {
@@ -129,7 +133,7 @@ export function ToolChartFooter(props: ToolChartFooterPropType): JSX.Element {
           <FacetSelector
             svFacetId={props.svFacetId}
             facetListPromise={Promise.resolve(props.facetList)}
-            onSvFacetIdUpdated={(svFacetId) => {
+            onSvFacetIdUpdated={(svFacetId): void => {
               props.onSvFacetIdUpdated(svFacetId);
               triggerGAEvent(GA_EVENT_TOOL_CHART_OPTION_CLICK, {
                 [GA_PARAM_TOOL_CHART_OPTION]:

@@ -15,6 +15,7 @@
 # Variable definitions
 
 # Required variables
+
 variable "project_id" {
   description = "The GCP project ID where the solution will be deployed"
   type        = string
@@ -31,15 +32,8 @@ variable "dc_api_key" {
 }
 
 # Optional variables
-# Set to your Google Analytics Tag ID to enable Google Analytics tracking.
-# Reference: https://support.google.com/analytics/answer/9539598
-variable "google_analytics_tag_id" {
-  description = "Google Analytics Tag ID"
-  type        = string
-  default     = null
-}
 
-# Optional: If blank, will generate a Maps API key. 
+# Optional: If blank, will generate a Maps API key.
 variable "maps_api_key" {
   description = "Google Maps API Key"
   type        = string
@@ -64,21 +58,41 @@ variable billing_project_id {
   default     = null
 }
 
+variable "google_analytics_tag_id" {
+  description = "Google Analytics Tag ID"
+  type        = string
+  default     = null
+}
+
 # Data Commons Cloud Storage bucket variables
+
 # If not set, the default is <namespace>-datacommons-data-<project_id>
-variable "dc_gcs_data_bucket_path_override" {
-  description = "Custom GCS data bucket path."
+variable "gcs_data_bucket_name" {
+  description = "Custom GCS data bucket name."
   type        = string
   default     = ""
 }
 
-variable "dc_gcs_data_bucket_location" {
-  description = "Data Commons data bucket GCS location"
+variable "gcs_data_bucket_input_folder" {
+  description = "Input data folder in the GCS data bucket"
+  type        = string
+  default     = "input"
+}
+
+variable "gcs_data_bucket_output_folder" {
+  description = "Output data folder in the GCS data bucket"
+  type        = string
+  default     = "output"
+}
+
+variable "gcs_data_bucket_location" {
+  description = "Data Commons GCS data bucket location"
   type        = string
   default     = "US"
 }
 
-## Data Commons Cloud SQL instance variables
+# Data Commons Cloud SQL instance variables
+
 variable "mysql_instance_name" {
   description = "The name of the MySQL instance"
   type        = string
@@ -129,11 +143,24 @@ variable "mysql_deletion_protection" {
   default     = false
 }
 
-## Data Commons Cloud Run service variables
+# Data Commons Cloud Run service variables
+
 variable "dc_web_service_image" {
   description = "Container image for Cloud Run service"
   type        = string
   default     = "gcr.io/datcom-ci/datacommons-services:stable"
+}
+
+variable "dc_web_service_min_instance_count" {
+  description = "Minimum number of instances for the Data Commons service"
+  type        = number
+  default     = 1
+}
+
+variable "dc_web_service_max_instance_count" {
+  description = "Maximum number of instances for the Data Commons service"
+  type        = number
+  default     = 1
 }
 
 variable "dc_web_service_cpu" {
@@ -154,7 +181,7 @@ variable "make_dc_web_service_public" {
   default     = true
 }
 
-## Data Commons Cloud Run job variables
+#  Data Commons Cloud Run job variables
 variable "dc_data_job_image" {
   description = "The container image for the data job"
   type        = string
@@ -173,26 +200,22 @@ variable "dc_data_job_memory" {
   default     = "8G"
 }
 
-## Data Commons Cloud VPC Network variables
+# Data Commons Cloud VPC Network variables
+
 variable "vpc_network_name" {
   description = "VPC network name to use"
   type        = string
-  default     = "default"
+  default     = ""
 }
 
-variable "vpc_network_subnet_name" {
-  description = "VPC network subnet name to use"
+variable "dc_gcs_data_bucket_location" {
+  description = "Data Commons data bucket GCS location"
   type        = string
-  default     = "default"
+  default     = "US"
 }
 
-variable "vpc_base_cidr_block" {
-  description = "Base CIDR block to be subdivided for VPC connectors"
-  type        = string
-  default     = "10.8.0.0/24"
-}
+# Data Commons Cloud Redis Memorystore instance variables
 
-## Data Commons Cloud Redis Memorystore instance variables
 variable "enable_redis" {
   description = "Enable redis instance in this deployment"
   type        = bool

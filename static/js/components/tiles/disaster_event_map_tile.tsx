@@ -35,11 +35,13 @@ import {
   GeoJsonFeature,
   GeoJsonFeatureProperties,
 } from "../../chart/types";
+import { intl } from "../../i18n/i18n";
+import { tileMessages } from "../../i18n/i18n_tile_messages";
 import {
   EARTH_NAMED_TYPED_PLACE,
   USA_PLACE_DCID,
 } from "../../shared/constants";
-import { NamedPlace, NamedTypedPlace, StatVarSpec } from "../../shared/types";
+import { NamedPlace, NamedTypedPlace } from "../../shared/types";
 import { isChildPlaceOf } from "../../tools/shared_util";
 import {
   DisasterEventPoint,
@@ -197,7 +199,7 @@ export const DisasterEventMapTile = memo(function DisasterEventMapTile(
       exploreLink={
         props.showExploreMore
           ? {
-              displayText: "Disaster Tool",
+              displayText: intl.formatMessage(tileMessages.disasterTool),
               url: `${EXPLORE_MORE_BASE_URL}${props.place.dcid}`,
             }
           : null
@@ -241,7 +243,7 @@ export const DisasterEventMapTile = memo(function DisasterEventMapTile(
                     <div
                       className={`${CSS_SELECTOR_PREFIX}-legend-entry`}
                       key={`${props.id}-legend-${spec.id}`}
-                      onClick={() => toggleEventTypeSelection(spec.id)}
+                      onClick={(): void => toggleEventTypeSelection(spec.id)}
                     >
                       <div
                         className={`${CSS_SELECTOR_PREFIX}-legend-color`}
@@ -406,7 +408,7 @@ export function fetchChartData(
     "polygonGeoJsonProp",
     props.apiRoot
   );
-  const childGeoJsonPromiseFn = () =>
+  const childGeoJsonPromiseFn = (): Promise<GeoJsonData> =>
     fetchGeoJsonData(
       props.place,
       props.enclosedPlaceType,
@@ -426,7 +428,7 @@ export function fetchChartData(
       break;
     }
   }
-  const placeGeoJsonPromiseFn = () =>
+  const placeGeoJsonPromiseFn = (): Promise<GeoJsonData> =>
     fetchNodeGeoJson([props.place.dcid], placeGeoJsonProp, props.apiRoot);
   const placeGeoJsonPromise = fetchData
     ? fetchData(
@@ -439,7 +441,7 @@ export function fetchChartData(
       ? Promise.resolve(props.parentPlaces)
       : null;
   if (!parentPlacesPromise) {
-    const parentPlacesPromiseFn = () =>
+    const parentPlacesPromiseFn = (): Promise<Array<NamedTypedPlace>> =>
       getParentPlacesPromise(props.place.dcid, props.apiRoot);
     parentPlacesPromise = fetchData
       ? fetchData(`parents-${props.place.dcid}`, parentPlacesPromiseFn)

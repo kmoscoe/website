@@ -65,10 +65,21 @@ website and mixer changes.
   nvm use 18.4.0
   ```
 
-- Protoc 3.21.9
+  To set this version as default:
+
+  ```bash
+  nvm alias default 18.4.0
+  ```
+
+- Protoc 3.21.12
 
   Install [`protoc`](https://grpc.io/docs/protoc-installation/) at version
-  [3.21.9](https://github.com/protocolbuffers/protobuf/releases/tag/v21.9).
+  3.21.12.
+
+  On MacOS, you can do this with Homebrew by running `brew install protobuf@21`.
+  Be sure to update your path as described in the output (likely it'll instruct
+  you to run
+  `echo 'export PATH="/opt/homebrew/opt/protobuf@21/bin:$PATH"' >> ~/.zshrc`).
 
 - [Optional] gcloud
 
@@ -129,6 +140,19 @@ To enable language models
 ```bash
 ./run_server.sh -m
 ```
+
+#### 🛠️ Troubleshooting server startup
+<details>
+  <summary>
+    <b>ModuleNotFoundError</b>: missing python libraries...
+  </summary>
+  Clear the environment and rebuild all required libraries by running:
+
+  ```bash
+  rm -rf .env
+  ./run_test.sh --setup_python
+  ```
+</details>
 
 ### Start NL Server
 
@@ -270,6 +294,10 @@ TIPS: you can inspect variable in the botton of "DEBUG CONSOLE" window.
 A full tutorial of debugging Flask app in Visual Studio Code is in
 [here](https://code.visualstudio.com/docs/python/tutorial-flask).
 
+### Manage Feature Flags
+
+Feature flags are used to gate the rollout of features, and can easily be turned on/off in various environments. Please read the Feature Flags [guide](https://github.com/datacommonsorg/website/blob/master/docs/feature_flags.md).
+
 ### Add new charts in Place Page
 
 1. Update [server/config/chart_config/](../server/config/chart_config)`<category>.json` with the new chart.
@@ -358,5 +386,5 @@ To test .yaml cloudbuild files, you can use cloud-build-local to dry run the fil
 The Data Commons site makes use of Material Design icons. In certain cases, font-based Material Design icon usage can result in
 flashes of unstyled content that can be avoided by using SVG icons.
 
-We have provided tools to facilitate the creation and use of Material SVG icons in both the Jinja template and in React components. 
+We have provided tools to facilitate the creation and use of Material SVG icons in both the Jinja template and in React components.
 For instructions  on how to generate and use these SVGs and components, please see: [Icon Readme](../tools/resources/icons/README.md):

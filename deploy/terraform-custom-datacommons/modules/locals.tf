@@ -16,9 +16,7 @@
 
 locals {
   # Data Commons Data Bucket
-  dc_gcs_data_bucket_path = var.dc_gcs_data_bucket_path_override != "" ? var.dc_gcs_data_bucket_path_override : "${var.namespace}-datacommons-data-${var.project_id}"
-  # VPC Connector CIDR block
-  vpc_connector_cidr = cidrsubnet(var.vpc_base_cidr_block, 4, 0)  # Generates the first /28 subnet from the /24 block
+  gcs_data_bucket_name = var.gcs_data_bucket_name != "" ? var.gcs_data_bucket_name : "${var.namespace}-datacommons-data-${var.project_id}"
 
   # Use var.maps_api_key if set, otherwise use generated Maps API key
   maps_api_key = var.maps_api_key != null ? var.maps_api_key : google_apikeys_key.maps_api_key.key_string
@@ -26,8 +24,18 @@ locals {
   # Use var.billing_project_id if set, otherwise use project_id for billing
   billing_project_id = var.billing_project_id != null ? var.billing_project_id : var.project_id
 
-  # Data Commons API root url
-  dc_api_root = "${var.dc_api_protocol}://${var.dc_api_hostname}"
+  # Data Commons API hostname
+  dc_api_hostname = "api.datacommons.org"
+
+  # Data Commons API protocol
+  dc_api_protocol = "https"
+
+  # Data Commons API root URL
+  dc_api_root = "${local.dc_api_protocol}://${local.dc_api_hostname}"
+
+  # Optionally-configured Redis instance
+  redis_instance = var.enable_redis ? google_redis_instance.redis_instance[0] : null
+
 
   # Shared environment variables used by the Data Commons web service and the Data
   # Commons data loading job
@@ -50,11 +58,19 @@ locals {
     },
     {
       name  = "OUTPUT_DIR"
-      value = "gs://${local.dc_gcs_data_bucket_path}/output"
+      value = "gs://${local.gcs_data_bucket_name}/${var.gcs_data_bucket_output_folder}"
     },
     {
       name  = "FORCE_RESTART"
       value = "${timestamp()}"
+    },
+    {
+      name  = "REDIS_HOST"
+      value = try(local.redis_instance.host, "")
+    },
+    {
+      name  = "REDIS_PORT"
+      value = try(local.redis_instance.port, "")
     }
   ]
 
@@ -62,16 +78,16 @@ locals {
   # web service and the Data Commons data loading job
   cloud_run_shared_env_variable_secrets = [
     {
-      name  = "DC_API_KEY"
+      name = "DC_API_KEY"
       value_source = {
         secret_key_ref = {
-          secret = google_secret_manager_secret.dc_api_key.secret_id
-          version  = "latest"
+          secret  = google_secret_manager_secret.dc_api_key.secret_id
+          version = "latest"
         }
       }
     },
     {
-      name  = "DB_PASS"
+      name = "DB_PASS"
       value_source = {
         secret_key_ref = {
           secret  = google_secret_manager_secret.mysql_password.secret_id

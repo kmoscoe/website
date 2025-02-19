@@ -45,6 +45,43 @@ BLOCKLIST_SVG_FILE = "/datacommons/svg/blocklist_svg.json"
 DEFAULT_NL_ROOT = "http://127.0.0.1:6060"
 
 
+def _get_api_key(env_keys=[], gcp_project='', gcp_path=''):
+  """Gets an api key first from the environment, then from GCP secrets.
+  
+  Args:
+      env_keys: A list of keys in the environment to try getting the api key with
+      gcp_project: The GCP project to use to get the api key from GCP secrets
+      gcp_path: The path to getting the api key from GCP secrets
+
+  Returns:
+      API key if it exists
+  
+  TODO: use this method everywhere else in this file
+  """
+  # Try to get the key from the environment
+  for k in env_keys:
+    if os.environ.get(k):
+      return os.environ.get(k)
+
+  # Try to get the key from secrets
+  if gcp_project and gcp_path:
+    secret_client = secretmanager.SecretManagerServiceClient()
+    secret_name = secret_client.secret_version_path(gcp_project, gcp_path,
+                                                    'latest')
+    secret_response = secret_client.access_secret_version(name=secret_name)
+    return secret_response.payload.data.decode('UTF-8').replace('\n', '')
+
+  # If key is not found, return an empty string
+  return ''
+
+
+def _enable_datagemma() -> bool:
+  """Returns whether to enable the DataGemma UI for this instance. 
+  This UI should only be enabled for internal instances.
+  """
+  return os.environ.get('ENABLE_DATAGEMMA') == 'true'
+
+
 def register_routes_base_dc(app):
   # apply the blueprints for all apps
   from server.routes.dev import html as dev_html
@@ -132,9 +169,21 @@ def register_routes_sustainability(app):
       )
 
 
-def register_routes_admin(app):
-  from server.routes.admin import html as admin_html
-  app.register_blueprint(admin_html.bp)
+def register_routes_datagemma(app, cfg):
+  # Install blueprint for DataGemma page
+  from server.routes.dev_datagemma import api as dev_datagemma_api
+  app.register_blueprint(dev_datagemma_api.bp)
+  from server.routes.dev_datagemma import html as dev_datagemma_html
+  app.register_blueprint(dev_datagemma_html.bp)
+
+  # Set the gemini api key
+  app.config['GEMINI_API_KEY'] = _get_api_key(['GEMINI_API_KEY'],
+                                              cfg.SECRET_PROJECT,
+                                              'gemini-api-key')
+  # Set the DC NL api key
+  app.config['DC_NL_API_KEY'] = _get_api_key(['DC_NL_API_KEY'],
+                                             cfg.SECRET_PROJECT,
+                                             'dc-nl-api-key')
 
 
 def register_routes_common(app):
@@ -265,7 +314,6 @@ def create_app(nl_root=DEFAULT_NL_ROOT):
 
   # Use NL_SERVICE_ROOT if it's set, otherwise use nl_root argument
   app.config['NL_ROOT'] = os.environ.get("NL_SERVICE_ROOT_URL", nl_root)
-  app.config['ENABLE_ADMIN'] = os.environ.get('ENABLE_ADMIN', '') == 'true'
 
   lib_cache.cache.init_app(app)
   lib_cache.model_cache.init_app(app)
@@ -288,8 +336,8 @@ def create_app(nl_root=DEFAULT_NL_ROOT):
   if cfg.SHOW_SUSTAINABILITY:
     register_routes_sustainability(app)
 
-  if app.config['ENABLE_ADMIN']:
-    register_routes_admin(app)
+  if _enable_datagemma():
+    register_routes_datagemma(app, cfg)
 
   # Load topic page config
   topic_page_configs = libutil.get_topic_page_config()
@@ -302,7 +350,10 @@ def create_app(nl_root=DEFAULT_NL_ROOT):
   app.config['CHART_CONFIG'] = chart_config
   ranked_statvars = set()
   for chart in chart_config:
-    ranked_statvars = ranked_statvars.union(chart['statsVars'])
+    ranked_statvars = ranked_statvars.union(
+        chart['statsVars']) if 'statsVars' in chart else ranked_statvars
+    ranked_statvars = ranked_statvars.union(
+        chart['variables']) if 'variables' in chart else ranked_statvars
     if 'relatedChart' in chart and 'denominator' in chart['relatedChart']:
       ranked_statvars.add(chart['relatedChart']['denominator'])
   app.config['RANKED_STAT_VARS'] = ranked_statvars
@@ -313,6 +364,7 @@ def create_app(nl_root=DEFAULT_NL_ROOT):
       "config/home_page/partners.json")
   app.config['HOMEPAGE_SAMPLE_QUESTIONS'] = libutil.get_json(
       "config/home_page/sample_questions.json")
+  app.config['FEATURE_FLAGS'] = libutil.load_feature_flags()
 
   if cfg.TEST or cfg.LITE:
     app.config['MAPS_API_KEY'] = ''
@@ -328,9 +380,6 @@ def create_app(nl_root=DEFAULT_NL_ROOT):
                                                       'maps-api-key', 'latest')
       secret_response = secret_client.access_secret_version(name=secret_name)
       app.config['MAPS_API_KEY'] = secret_response.payload.data.decode('UTF-8')
-
-  if app.config['ENABLE_ADMIN']:
-    app.config['ADMIN_SECRET'] = os.environ.get('ADMIN_SECRET', '')
 
   if cfg.LOCAL:
     app.config['LOCAL'] = True
