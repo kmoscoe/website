@@ -174,7 +174,7 @@ upload() {
 }
 
 # Run data container
-run_data_() {
+run_data() {
   if [ "$RELEASE" == "latest" ]; then
     docker pull gcr.io/datcom-ci/datacommons-data:latest
   fi
@@ -184,7 +184,7 @@ run_data_() {
     schema_update="-e DATA_UPDATE_MODE=schemaupdate"
     schema_update_text=" in schema update mode"
   fi
-  if [ $data_hybrid == true ]; then
+  if [ "$data_hybrid" == true ]; then
    check_app_credentials
     echo -e "${GREEN}Starting Docker data container with '$RELEASE' release${schema_update_text} and writing output to Google Cloud...${NC}\n"
     docker run -it \
@@ -207,7 +207,7 @@ run_data_() {
 
 # Run service container
 run_service() {
-  if [ $service_hybrid == true ]; then
+  if [ "$service_hybrid" == true ]; then
     check_app_credentials
     # Custom-built image
     if [ -n "$IMAGE" ]; then
@@ -235,6 +235,7 @@ run_service() {
       -v $HOME/.config/gcloud/application_default_credentials.json:/gcp/creds.json:ro \
       gcr.io/datcom-ci/datacommons-services:${RELEASE}
     fi
+  # Regular mode
   else
     # Custom-built image
     if [ -n "$IMAGE" ]; then
@@ -317,8 +318,6 @@ SCHEMA_UPDATE=false
 IMAGE=""
 PACKAGE=""
 
-set -x
-
 # Parse command-line options
 OPTS=$(getopt -o e:a:c:r:i:sp:h --long env_file:,actions:,container:,release:,image:,schema_update,package:,help -n 'run_local_docker.sh' -- "$@")
 
@@ -326,6 +325,8 @@ if [ $? != 0 ]; then
   echo "Failed to parse options." >&2
   exit 1
 fi
+
+eval set -- "$OPTS"
 
 # Process command-line options
 # getopt handles invalid options and missing arguments
@@ -406,13 +407,13 @@ fi
 source "$ENV_FILE"
 
 # Set variables for hybrid mode
-----------------------------------------------------
+#----------------------------------------------------
 # Determine hybrid mode and set a variable to true for use throughout the script
-if [[ $INPUT_DIR == *"gs://"* ]] && [[ $OUTPUT_DIR == *"gs://"* ]]; then
+if [[ "$INPUT_DIR" == *"gs://"* ]] && [[ "$OUTPUT_DIR" == *"gs://"* ]]; then
   service_hybrid=true
-elif [[ $INPUT_DIR != *"gs://"* ]] && [[ $OUTPUT_DIR == *"gs://"* ]]; then
+elif [[ "$INPUT_DIR" != *"gs://"* ]] && [[ "$OUTPUT_DIR" == *"gs://"* ]]; then
   data_hybrid=true
-elif [[ $INPUT_DIR == *"gs://"* ]] && [[ $OUTPUT_DIR != *"gs://"* ]]; then
+elif [[ "$INPUT_DIR" == *"gs://"* ]] && [[ "$OUTPUT_DIR" != *"gs://"* ]]; then
   echo -e "${RED}ERROR:$NC Invalid data directory settings in env.list file. Please set your OUTPUT_DIR to a Cloud Path or your INPUT_DIR to a local path.\n" 1>&2
   exit 1
 fi
@@ -445,7 +446,7 @@ if [ "$ACTIONS" != "run" ] && [ -z "$IMAGE" ]; then
 fi
 
 # Missing package for upload; not an error, just info
-if [[ "$ACTIONS" == *"upload"* ]] && [ -z $PACKAGE ]; then
+if [[ "$ACTIONS" == *"upload"* ]] && [ -z "$PACKAGE" ]; then
   echo -e "${YELLOW}INFO:${NC} No '--package' option specified."
   echo -e "The target image will use the same name and tag as the source image '$IMAGE'.\n"
   sleep 3
@@ -456,19 +457,19 @@ fi
 # Handle invalid option combinations and reset to valid (most are silently 
 # ignored and handled by the case statement)
 #--------------------------------------------------------------------
-if [ $data_docker == true ]; then
+if [ "$data_hybrid" == true ]; then
   ACTIONS="run"
   CONTAINER="data"
 elif [ "$SCHEMA_UPDATE" == true ]; then
   CONTAINER="all"
 fi  
 
-if [ $service_docker == true ]; then
-  if [ $ACTIONS != "run" ] &&  [ $ACTIONS != "build_run" ]; then
+if [ "$service_hybrid" == true ]; then
+  if [ "$ACTIONS" != "run" ] &&  [ "$ACTIONS" != "build_run" ]; then
     echo -e "${RED}ERROR: ${NC}Invalid action for running in "hybrid" service mode.\n Valid options are 'run' or 'build_run'.\n" 1>&2
     exit 1
   fi
-  if [ -n $IMAGE ]; then
+  if [ -n "$IMAGE" ]; then
     RELEASE=''
   fi
   CONTAINER="service"
