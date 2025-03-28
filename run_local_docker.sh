@@ -281,6 +281,30 @@ check_app_credentials() {
   fi
 }
 
+# Get credentials to authenticate Docker to GCP. Needed for docker tag
+get_docker_credentials() {
+  echo -e "Getting credentials for Cloud Docker package...\n"
+  gcloud auth configure-docker ${GOOGLE_CLOUD_REGION}-docker.pkg.dev
+  exit_status=$?
+  if [ ${exit_status} -eq 0 ]; then
+    return 0
+  fi
+}
+
+# Check the user's/service account's credentials to authorize
+# gcloud to access GCP. Needed for docker push.
+check_gcloud_credentials() {
+  echo -e "Checking for valid gcloud credentials...\n"
+  # Attempt to print the identity token 
+  gcloud auth print-identity-token > /dev/null
+  exit_status=$?
+  if [ ${exit_status} -eq 0 ]; then
+    echo -e "gcloud credentials are valid.\n"
+    return 0
+    # If they're not, the gcloud auth login program will take over
+  fi
+}
+
 # Begin execution 
 #######################################################
 
@@ -292,6 +316,8 @@ RELEASE="stable"
 SCHEMA_UPDATE=false
 IMAGE=""
 PACKAGE=""
+
+set -x
 
 # Parse command-line options
 OPTS=$(getopt -o e:a:c:r:i:sp:h --long env_file:,actions:,container:,release:,image:,schema_update,package:,help -n 'run_local_docker.sh' -- "$@")
@@ -328,7 +354,7 @@ while true; do
         CONTAINER="$2"
         shift 2
       else
-        echo -e "${RED}ERROR:${NC} That is not a valid container option. Valid options are:\nall\nservice\n" 1>&2
+        echo -e "${RED}ERROR:${NC} That is not a valid container option. Valid options are 'all' or 'service'\n" 1>&2
         exit 1
       fi
       ;;
@@ -337,7 +363,7 @@ while true; do
         RELEASE="$2"
         shift 2
       else
-        echo -e "${RED}ERROR:${NC} That is not a valid release option. Valid options are:\nstable\nlatest\n" 1>&2
+        echo -e "${RED}ERROR:${NC} That is not a valid release option. Valid options are 'stable' or 'latest'\n" 1>&2
         exit 1
       fi
       ;;
@@ -379,7 +405,7 @@ fi
 # Get options from the selected env.list file
 source "$ENV_FILE"
 
-# Set defaults for hybrid mode
+# Set variables for hybrid mode
 ----------------------------------------------------
 # Determine hybrid mode and set a variable to true for use throughout the script
 if [[ $INPUT_DIR == *"gs://"* ]] && [[ $OUTPUT_DIR == *"gs://"* ]]; then
@@ -427,12 +453,26 @@ if [[ "$ACTIONS" == *"upload"* ]] && [ -z $PACKAGE ]; then
   PACKAGE=$IMAGE
 fi
 
-# Handle invalid option combinations and reset to valid (others are silently 
+# Handle invalid option combinations and reset to valid (most are silently 
 # ignored and handled by the case statement)
 #--------------------------------------------------------------------
-if [ "$SCHEMA_UPDATE" == true ] && [ "$CONTAINER" == "service" ];then
+if [ $data_docker == true ]; then
+  ACTIONS="run"
+  CONTAINER="data"
+elif [ "$SCHEMA_UPDATE" == true ]; then
   CONTAINER="all"
 fi  
+
+if [ $service_docker == true ]; then
+  if [ $ACTIONS != "run" ] &&  [ $ACTIONS != "build_run" ]; then
+    echo -e "${RED}ERROR: ${NC}Invalid action for running in "hybrid" service mode.\n Valid options are 'run' or 'build_run'.\n" 1>&2
+    exit 1
+  fi
+  if [ -n $IMAGE ]; then
+    RELEASE=''
+  fi
+  CONTAINER="service"
+fi
 
 # Call Docker commands
 ######################################
@@ -441,11 +481,10 @@ case "$ACTIONS" in
     build
     ;;
   "build_run")
+    build
     if [ "$CONTAINER" == "service" ]; then
-      build
       run_service
     else
-      build
       run_data
       run_service
     fi   
@@ -460,6 +499,8 @@ case "$ACTIONS" in
   "run")
     if [ "$CONTAINER" == "service" ]; then
       run_service
+    elif [ "$CONTAINER" == "data" ]; then
+      run_data
     else
       run_data
       run_service
