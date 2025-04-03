@@ -41,10 +41,10 @@ combinations:
 
 Note: If you are running in "hybrid" mode, the only valid options are:
 
-./run_local_docker.sh [--env_file|-e <env.list file path>] [--actions|-a run|build_run] 
+./run_cdc_dev_docker.sh [--env_file|-e <env.list file path>] [--actions|-a run|build_run] 
  [--image|-i <custom image name:tag>]
 
-./run_local_docker.sh [--env_file|-e <env.list file path>] [--actions|-a run] 
+./run_cdc_dev_docker.sh [--env_file|-e <env.list file path>] [--actions|-a run] 
   [--schema-update|-s]
 
 All others will be ignored. The script will infer the correct container based on the 
@@ -73,20 +73,23 @@ Options:
 -container|-c all|service|data
   Optional: The containers to run.
   Default with 'run' and 'build_run': all: Run all containers. Other options are:
-  * service: Only run the service container. You can use this if you have not made any changes to your data, or you are only running the service container locally (with the data container in the cloud) Exclusive with '--schema-update'.
-  * data: Only run the data container. This is only valid if you are running the data container locally (with the service container in the cloud).
-  Only valid with 'run' and 'build_run'. Ignored otherwise.
-  For "hybrid" setups, the script will infer the correct container to run from the
+  * service: Only run the service container. You can use this if you have not made 
+    any changes to your data, or   you are only running the service container 
+    locally (with the data container in the cloud) Exclusive with '--schema-update'.
+  * data: Only run the data container. This is only valid if you are running the 
+    data container locally (with the service container in the cloud).
+    Only valid with 'run' and 'build_run'. Ignored otherwise.
+  For "hybrid" setups, the script will infer the correct container to run from the 
   env.list file; this setting will be ignored.
-  
+
 --release|-r stable|latest
   Optional with 'run' and 'build_run'.
   Default: stable: run the prebuilt 'stable' image provided by Data Commons team.
   Other options:
   * latest: Run the 'latest' release provided by Data Commons team. 
-  If you specify this with an additional '--image' option, the option applies 
-  only to the data container. Otherise, it applies to both containers. 
-  Only valid with 'run' and 'build_run'. Ignored otherwise.
+    If you specify this with an additional '--image' option, the option applies 
+    only to the data container. Otherise, it applies to both containers. 
+    Only valid with 'run' and 'build_run'. Ignored otherwise.
 
 --image|-i <custom image name:tag>
   Optional with 'run': the name and tag of the custom image to run in the service 
@@ -192,10 +195,10 @@ run_data() {
   echo -e "${GREEN}Starting Docker data container with '$RELEASE' release${schema_update_text}...${NC}\n"
   docker run -i \
    --env-file $ENV_FILE \
-    ${schema_update//\"/} \
-    -v $INPUT_DIR:$INPUT_DIR \
-    -v $OUTPUT_DIR:$OUTPUT_DIR \
-    gcr.io/datcom-ci/datacommons-data:${RELEASE}
+  ${schema_update//\"/} \
+  -v $INPUT_DIR:$INPUT_DIR \
+  -v $OUTPUT_DIR:$OUTPUT_DIR \
+  gcr.io/datcom-ci/datacommons-data:${RELEASE}
   fi
 }
 
@@ -256,7 +259,7 @@ run_service() {
     -v $INPUT_DIR:$INPUT_DIR \
     -v $OUTPUT_DIR:$OUTPUT_DIR \
     gcr.io/datcom-ci/datacommons-services:${RELEASE}
-    fi
+  fi
   fi
 }
 
@@ -480,7 +483,7 @@ case "$ACTIONS" in
     build
     ;;
   "build_run")
-      build
+    build
     if [ "$CONTAINER" == "service" ]; then
       run_service
     else
@@ -498,7 +501,7 @@ case "$ACTIONS" in
   "run")
     if [ "$CONTAINER" == "service" ]; then
       run_service
-      elif [ "$CONTAINER" == "data" ]; then
+    elif [ "$CONTAINER" == "data" ]; then
       run_data
     else
       run_data
